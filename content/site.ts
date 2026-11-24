@@ -253,7 +253,7 @@ export const site = {
       "Five open roles, all remote: software engineering, technical consulting, and business operations.",
     body: [
       "These are the current openings. Each one lists the work, the experience it asks for, and the pay.",
-      "There is no application form yet. To apply, start a conversation and include the role title.",
+      "Apply on the role page. No account is required. Include your résumé as a PDF or DOCX.",
     ],
   },
 

@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { ApplicationForm } from "@/components/ApplicationForm";
 import { Footer } from "@/components/Footer";
 import { Header } from "@/components/Header";
 import { getJob, jobs } from "@/content/jobs";
-import { site } from "@/content/site";
 
 type PageProps = {
   params: Promise<{ slug: string }>;
@@ -111,12 +111,10 @@ export default async function JobPage({ params }: PageProps) {
                 Apply for this role
               </h2>
               <p className="mt-3 text-base leading-7 text-muted">
-                {site.careers.body[1]} Name the role “{job.title}” so it is
-                clear which opening you mean.
+                No account needed. Tell us who you are and attach your résumé.
+                The hiring team reviews every application.
               </p>
-              <a href="/#contact" className="btn btn-primary mt-6">
-                Start a conversation
-              </a>
+              <ApplicationForm roleTitle={job.title} roleSlug={job.slug} />
             </div>
           </div>
         </article>
