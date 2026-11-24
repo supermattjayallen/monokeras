@@ -6,6 +6,9 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const maxTokenLength = 12000;
+const minAccessTokenLength = 20;
+// Supabase refresh tokens for this project are short opaque strings.
+const minRefreshTokenLength = 8;
 
 export async function POST(request: Request) {
   if (!sameOrigin(request)) {
@@ -59,16 +62,16 @@ async function readBody(
   }
   if (!payload || typeof payload !== "object") return null;
   const record = payload as Record<string, unknown>;
-  const accessToken = token(record.accessToken);
-  const refreshToken = token(record.refreshToken);
+  const accessToken = token(record.accessToken, minAccessTokenLength);
+  const refreshToken = token(record.refreshToken, minRefreshTokenLength);
   if (!accessToken || !refreshToken) return null;
   return { accessToken, refreshToken };
 }
 
-function token(value: unknown): string | null {
+function token(value: unknown, minLength: number): string | null {
   if (typeof value !== "string") return null;
   const trimmed = value.trim();
-  if (trimmed.length < 20 || trimmed.length > maxTokenLength) return null;
+  if (trimmed.length < minLength || trimmed.length > maxTokenLength) return null;
   if (/\s/.test(trimmed)) return null;
   return trimmed;
 }
