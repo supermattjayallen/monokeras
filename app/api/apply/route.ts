@@ -1,3 +1,4 @@
+import { createClient } from "@supabase/supabase-js";
 import { getJob } from "@/content/jobs";
 
 export const runtime = "nodejs";
@@ -59,75 +60,50 @@ export async function POST(request: Request) {
     );
   }
 
-  const token = process.env.GITHUB_TOKEN;
-  const repo = process.env.CAREERS_REPO || "supermattjayallen/monokeras-applications";
-  if (!token) {
+  const url = process.env.SUPABASE_URL;
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !serviceKey) {
     return Response.json(
       { error: "Applications are not being delivered yet." },
       { status: 503 },
     );
   }
 
+  const supabase = createClient(url, serviceKey, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+
   const stamp = new Date().toISOString().replace(/[:.]/g, "-");
-  const folder = `applications/${stamp}-${job.slug}`;
-  const filename = safeName(resume.name);
+  const resumePath = `${stamp}-${job.slug}/${safeName(resume.name)}`;
   const bytes = Buffer.from(await resume.arrayBuffer());
-
-  const uploaded = await fetch(
-    `https://api.github.com/repos/${repo}/contents/${folder}/${filename}`,
-    {
-      method: "PUT",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        Accept: "application/vnd.github+json",
-        "Content-Type": "application/json",
-        "User-Agent": "monokeras-careers",
-      },
-      body: JSON.stringify({
-        message: `Store résumé for ${job.title}`,
-        content: bytes.toString("base64"),
-      }),
-    },
-  );
-
-  if (!uploaded.ok) {
+  const uploaded = await supabase.storage.from("resumes").upload(resumePath, bytes, {
+    contentType: resume.type || "application/octet-stream",
+    upsert: false,
+  });
+  if (uploaded.error) {
     return Response.json(
       { error: "The application could not be sent. Try again in a moment." },
       { status: 502 },
     );
   }
 
-  const file = (await uploaded.json()) as { content?: { html_url?: string } };
-  const issue = await fetch(`https://api.github.com/repos/${repo}/issues`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      Accept: "application/vnd.github+json",
-      "Content-Type": "application/json",
-      "User-Agent": "monokeras-careers",
-    },
-    body: JSON.stringify({
-      title: `${job.title}: ${name}`,
-      body: [
-        `**Role:** ${job.title}`,
-        `**Name:** ${name}`,
-        `**Email:** ${email}`,
-        `**Phone:** ${phone}`,
-        `**Location:** ${location}`,
-        `**Experience:** ${experience}`,
-        `**Tech stack:** ${text(form.get("stack")) || "Not provided"}`,
-        `**Salary expectation:** ${text(form.get("salary")) || "Not provided"}`,
-        `**Engineering level:** ${text(form.get("level")) || "Not provided"}`,
-        `**Focus:** ${focus}`,
-        "",
-        file.content?.html_url
-          ? `**Résumé:** ${file.content.html_url}`
-          : "**Résumé:** stored with this application",
-      ].join("\n"),
-    }),
+  const inserted = await supabase.from("applications").insert({
+    role_slug: job.slug,
+    role_title: job.title,
+    full_name: name,
+    email,
+    phone,
+    location,
+    experience,
+    tech_stack: text(form.get("stack")) || null,
+    salary_expectation: text(form.get("salary")) || null,
+    engineering_level: text(form.get("level")) || null,
+    focus,
+    resume_path: resumePath,
   });
 
-  if (!issue.ok) {
+  if (inserted.error) {
+    await supabase.storage.from("resumes").remove([resumePath]);
     return Response.json(
       { error: "The application could not be sent. Try again in a moment." },
       { status: 502 },
