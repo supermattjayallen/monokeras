@@ -248,12 +248,12 @@ export const site = {
 
   careers: {
     eyebrow: "Careers",
-    title: "Work on technology change that has to last.",
+    title: "Find your next role.",
     supporting:
-      "Monokeras is not posting open roles. People who want to work on web platforms, cloud infrastructure, security, AI workflows, and legacy systems are welcome to start a conversation.",
+      "Five open roles, all remote: software engineering, technical consulting, and business operations.",
     body: [
-      "The practice is based in Asheville, North Carolina. Engagements are built around clear technical judgment, practical delivery, and systems that teams can keep improving.",
-      "There is no application form. When a role is actually open, it will be listed here. Until then, a conversation is the way in.",
+      "These are the current openings. Each one lists the work, the experience it asks for, and the pay.",
+      "There is no application form yet. To apply, start a conversation and include the role title.",
     ],
   },
 
