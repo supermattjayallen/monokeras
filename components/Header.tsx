@@ -48,12 +48,11 @@ export function Header() {
         </nav>
 
         <div className="flex items-center gap-2">
-          <a
-            href={site.cta.primary.href}
-            className="btn btn-primary hidden sm:inline-flex"
-          >
-            {site.cta.primary.label}
-          </a>
+          <div className="hidden sm:block">
+            <a href={site.cta.primary.href} className="btn btn-primary">
+              {site.cta.primary.label}
+            </a>
+          </div>
 
           <button
             type="button"

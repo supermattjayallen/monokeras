@@ -75,21 +75,22 @@ export const site = {
   },
 
   navigation: [
-    { label: "Capabilities", href: "#capabilities" },
-    { label: "Approach", href: "#approach" },
-    { label: "About", href: "#about" },
-    { label: "FAQ", href: "#faq" },
-    { label: "Contact", href: "#contact" },
+    { label: "Capabilities", href: "/#capabilities" },
+    { label: "Approach", href: "/#approach" },
+    { label: "About", href: "/#about" },
+    { label: "FAQ", href: "/#faq" },
+    { label: "Careers", href: "/careers" },
+    { label: "Contact", href: "/#contact" },
   ] as NavItem[],
 
   cta: {
     primary: {
       label: "Start a conversation",
-      href: "#contact",
+      href: "/#contact",
     },
     secondary: {
       label: "Explore capabilities",
-      href: "#capabilities",
+      href: "/#capabilities",
     },
   },
 
@@ -243,6 +244,17 @@ export const site = {
       "Share a bit about your systems, timeline, and goals. Engagements usually begin with a focused conversation to understand fit and sensible next steps.",
     unconfiguredNote:
       "Contact channels are not configured yet. Set contact.email, contact.phone, or contact.bookingUrl in content/site.ts to display them here. No contact form is shown until message delivery is implemented.",
+  },
+
+  careers: {
+    eyebrow: "Careers",
+    title: "Work on technology change that has to last.",
+    supporting:
+      "Monokeras is not posting open roles. People who want to work on web platforms, cloud infrastructure, security, AI workflows, and legacy systems are welcome to start a conversation.",
+    body: [
+      "The practice is based in Asheville, North Carolina. Engagements are built around clear technical judgment, practical delivery, and systems that teams can keep improving.",
+      "There is no application form. When a role is actually open, it will be listed here. Until then, a conversation is the way in.",
+    ],
   },
 
   footer: {
