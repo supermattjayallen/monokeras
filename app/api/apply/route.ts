@@ -1,10 +1,9 @@
 import { createClient } from "@supabase/supabase-js";
+import { getApplicationFields } from "@/content/application-forms";
 import { getJob } from "@/content/jobs";
+import { collectApplication } from "@/lib/application";
 
 export const runtime = "nodejs";
-
-const MAX_RESUME_BYTES = 4 * 1024 * 1024;
-const ALLOWED_EXTENSIONS = new Set(["pdf", "doc", "docx"]);
 
 function text(value: FormDataEntryValue | null): string {
   return typeof value === "string" ? value.trim() : "";
@@ -21,41 +20,30 @@ export async function POST(request: Request) {
   }
 
   const job = getJob(text(form.get("roleSlug")));
-  if (!job) {
+  const fields = job ? getApplicationFields(job.slug) : undefined;
+  if (!job || !fields) {
     return Response.json({ error: "That role is not open." }, { status: 400 });
   }
-
-  const name = text(form.get("name"));
-  const email = text(form.get("email"));
-  const phone = text(form.get("phone"));
-  const location = text(form.get("location"));
-  const experience = text(form.get("experience"));
-  const focus = text(form.get("focus"));
-  const resume = form.get("resume");
-
-  if (
-    !name ||
-    !email ||
-    !email.includes("@") ||
-    !phone ||
-    !location ||
-    !experience ||
-    !focus ||
-    !form.get("consent")
-  ) {
+  if (!form.get("consent")) {
     return Response.json(
       { error: "Fill in the required fields before submitting." },
       { status: 400 },
     );
   }
 
-  if (!(resume instanceof File) || resume.size === 0) {
-    return Response.json({ error: "Attach your résumé." }, { status: 400 });
+  const collected = collectApplication(form, fields);
+  if (!collected.ok) {
+    return Response.json({ error: collected.error }, { status: 400 });
   }
-  const extension = resume.name.split(".").pop()?.toLowerCase() || "";
-  if (resume.size > MAX_RESUME_BYTES || !ALLOWED_EXTENSIONS.has(extension)) {
+
+  const { answers, resume } = collected.value;
+  const fullName = answers.full_name;
+  const email = answers.email;
+  const phone = answers.phone;
+  const location = answers.location;
+  if (!fullName || !email || !phone || !location) {
     return Response.json(
-      { error: "Upload a PDF, DOC, or DOCX résumé of 4 MB or less." },
+      { error: "Fill in the required fields before submitting." },
       { status: 400 },
     );
   }
@@ -73,37 +61,44 @@ export async function POST(request: Request) {
     auth: { persistSession: false, autoRefreshToken: false },
   });
 
-  const stamp = new Date().toISOString().replace(/[:.]/g, "-");
-  const resumePath = `${stamp}-${job.slug}/${safeName(resume.name)}`;
-  const bytes = Buffer.from(await resume.arrayBuffer());
-  const uploaded = await supabase.storage.from("resumes").upload(resumePath, bytes, {
-    contentType: resume.type || "application/octet-stream",
-    upsert: false,
-  });
-  if (uploaded.error) {
-    return Response.json(
-      { error: "The application could not be sent. Try again in a moment." },
-      { status: 502 },
-    );
+  let resumePath: string | null = null;
+  if (resume) {
+    const stamp = new Date().toISOString().replace(/[:.]/g, "-");
+    resumePath = `${stamp}-${job.slug}/${safeName(resume.name)}`;
+    const bytes = Buffer.from(await resume.arrayBuffer());
+    const uploaded = await supabase.storage.from("resumes").upload(resumePath, bytes, {
+      contentType: resume.type || "application/octet-stream",
+      upsert: false,
+    });
+    if (uploaded.error) {
+      return Response.json(
+        { error: "The application could not be sent. Try again in a moment." },
+        { status: 502 },
+      );
+    }
   }
 
   const inserted = await supabase.from("applications").insert({
     role_slug: job.slug,
     role_title: job.title,
-    full_name: name,
+    full_name: fullName,
     email,
     phone,
     location,
-    experience,
-    tech_stack: text(form.get("stack")) || null,
-    salary_expectation: text(form.get("salary")) || null,
-    engineering_level: text(form.get("level")) || null,
-    focus,
+    experience: answers.years_experience ?? null,
+    tech_stack: answers.primary_stack ?? null,
+    salary_expectation: answers.salary_expectation ?? null,
+    engineering_level: answers.engineering_level ?? null,
+    engineering_category: answers.engineering_category ?? null,
+    opportunity_source: answers.opportunity_source ?? null,
+    work_authorization: answers.work_authorization ?? null,
     resume_path: resumePath,
   });
 
   if (inserted.error) {
-    await supabase.storage.from("resumes").remove([resumePath]);
+    if (resumePath) {
+      await supabase.storage.from("resumes").remove([resumePath]);
+    }
     return Response.json(
       { error: "The application could not be sent. Try again in a moment." },
       { status: 502 },

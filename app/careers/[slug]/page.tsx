@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { ApplicationForm } from "@/components/ApplicationForm";
 import { Footer } from "@/components/Footer";
 import { Header } from "@/components/Header";
+import { getApplicationFields } from "@/content/application-forms";
 import { getJob, jobs } from "@/content/jobs";
 
 type PageProps = {
@@ -31,7 +32,8 @@ export async function generateMetadata({
 export default async function JobPage({ params }: PageProps) {
   const { slug } = await params;
   const job = getJob(slug);
-  if (!job) notFound();
+  const fields = getApplicationFields(slug);
+  if (!job || !fields) notFound();
 
   return (
     <>
@@ -111,10 +113,14 @@ export default async function JobPage({ params }: PageProps) {
                 Apply for this role
               </h2>
               <p className="mt-3 text-base leading-7 text-muted">
-                No account needed. Tell us who you are and attach your résumé.
-                The hiring team reviews every application.
+                No account needed. Tell us who you are. The hiring team reviews
+                every application.
               </p>
-              <ApplicationForm roleTitle={job.title} roleSlug={job.slug} />
+              <ApplicationForm
+                roleTitle={job.title}
+                roleSlug={job.slug}
+                fields={fields}
+              />
             </div>
           </div>
         </article>
